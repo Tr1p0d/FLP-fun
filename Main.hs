@@ -3,6 +3,8 @@
 
 import Control.Applicative (many, (<|>), (<*))
 import Control.Monad ((>>=), (>=>))
+import Control.Monad.Trans
+import Control.Monad.Trans.Maybe
 import Data.Attoparsec.Text as DAT ( double, parseOnly, string, Parser, double, takeWhile, anyChar, char, endOfInput,
   endOfLine)
 import Data.List (group, genericLength)
@@ -19,7 +21,7 @@ probDB = do
   s <- many $ symbol <* endOfLine
   d <- many $ diagram <* endOfLine
   t <- many $ trigram <* endOfLine
-  return $ LanStatistics (Symbols M.empty (M.fromList s)) (Diagrams (constructProbMap d) (M.fromList d)) (Trigrams (constructProbMap t) (M.fromList t))
+  return $ LanStatistics (Symbols (constructProbMap s) (M.fromList s)) (Diagrams (constructProbMap d) (M.fromList d)) (Trigrams (constructProbMap t) (M.fromList t))
  where
   constructProbMap a = foldr insertProb M.empty a
 
@@ -51,14 +53,25 @@ trigram = do
 parseDB h = T.hGetContents h >>= (\x -> return $ parseOnly probDB x)
 
 main :: IO ()
-main = getArgs >> withFile "english.db" ReadMode ( parseDB >=> processParserOutput )
+main = getArgs >> withFile "english.db" ReadMode ((\x -> lift $ parseDB x) >=> processParserOutput )
  where
-  processParserOutput :: Either String LanStatistics -> IO ()
-  processParserOutput (Left y) = hPutStrLn stdout ( "cannot parse db : " ++ y ) >> exitFailure
-  processParserOutput (Right x) = print . getDiagrams $ x
+  processParserOutput :: Either String LanStatistics -> MaybeT IO (LanStatistics, LanStatistics)
+  processParserOutput (Left y) = hPutStrLn stdout ( "cannot parse db : " ++ y ) >> MaybeT $ return Nothing
+  --processParserOutput (Right x) = hGetContents
+ --	 >=> (\y -> return $ analyzeInput y) 
+--	 >=> (\z -> return (x,z)) $ stdin
 
 
 {- Analytic functions -}
+
+analyzeInput :: String -> LanStatistics
+analyzeInput s = LanStatistics
+  (makeSymbols s)
+  (makeDiagramsProb . makeDiagrams $ s)
+  (makeTrigramsProb . makeTrigrams $ s)
+
+makeSymbols :: String -> Symbols
+makeSymbols s = Symbols (makeMapProb s) (makeMapChar s)
 
 makeDiagrams :: String -> [Diagram]
 makeDiagrams (x:y:[]) = [(x,y)]
