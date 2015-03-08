@@ -11,16 +11,16 @@ type Trigram = (Char, Char, Char)
 type Prob = Double
 
 data Symbols = Symbols (M.Map Prob [Symbol]) (M.Map Symbol Prob) deriving Show
-data Diagrams = Diagrams (M.Map Prob [Diagram]) (M.Map Diagram Prob)
-data Trigrams = Trigrams (M.Map Prob [Trigram]) (M.Map Trigram Prob)
+data Diagrams = Diagrams (M.Map Prob [Diagram]) (M.Map Diagram Prob) deriving Show
+data Trigrams = Trigrams (M.Map Prob [Trigram]) (M.Map Trigram Prob) deriving Show
 
 data LanStatistics = LanStatistics {
   getSymbols :: Symbols
 , getDiagrams :: Diagrams
 , getTrigrams :: Trigrams
-}
+} deriving Show
 
-stats = Symbols ( M.fromList . zip [1,2,3] $ [['a'],['b'],"caqwe"] ) (M.fromList [])
+stats = Symbols ( M.fromList . zip [1,2,3] $ [['a'],['b'],"cqwe"] ) (M.fromList . zip ['a', 'b', 'c', 'q', 'w', 'e'] $ [1,2,3,3,3,3])
 
 probToSym :: Prob -> Symbols -> [Symbol]
 probToSym k (Symbols pts _) = fromJust . M.lookup k $ pts
