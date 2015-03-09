@@ -9,6 +9,7 @@ type Order = Int
 type Diagram = (Char, Char)
 type Trigram = (Char, Char, Char)
 type Prob = Double
+type Key = M.Map Symbol Symbol
 
 data Symbols = Symbols (M.Map Prob [Symbol]) (M.Map Symbol Prob) deriving Show
 data Diagrams = Diagrams (M.Map Prob [Diagram]) (M.Map Diagram Prob) deriving Show
@@ -20,7 +21,7 @@ data LanStatistics = LanStatistics {
 , getTrigrams :: Trigrams
 } deriving Show
 
-stats = Symbols ( M.fromList . zip [1,2,3] $ [['a'],['b'],"cqwe"] ) (M.fromList . zip ['a', 'b', 'c', 'q', 'w', 'e'] $ [1,2,3,3,3,3])
+--stats = Symbols ( M.fromList . zip [1,2,3] $ [['a'],['b'],"cqwe"] ) (M.fromList . zip ['a', 'b', 'c', 'q', 'w', 'e'] $ [1,2,3,3,3,3])
 
 probToSym :: Prob -> Symbols -> [Symbol]
 probToSym k (Symbols pts _) = fromJust . M.lookup k $ pts
@@ -33,6 +34,15 @@ symToOrder s (Symbols pts stp) = fromJust $ flip M.lookup stp >=> flip M.lookupI
 
 orderToSym :: Order -> Symbols -> [Symbol]
 orderToSym s (Symbols pts _) = snd . M.elemAt s $ pts
+
+orderLength :: Symbols -> Int
+orderLength (Symbols pts _) = length . M.keys $ pts 
+
+mapHead :: Symbols -> Symbol
+mapHead = undefined
+
+mapTail :: Symbols -> Symbols
+mapTail = undefined
 
 
 

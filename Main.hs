@@ -53,14 +53,33 @@ trigram = do
 parseDB h = T.hGetContents h >>= (\x -> return $ parseOnly probDB x)
 
 main :: IO ()
-main = getArgs >> withFile "english.db" ReadMode ((\x -> lift $ parseDB x) >=> processParserOutput )
+main = getArgs >> withFile "english.db" ReadMode (parseDB >=> processParserOutput )
  where
-  processParserOutput :: Either String LanStatistics -> MaybeT IO (LanStatistics, LanStatistics)
-  processParserOutput (Left y) = hPutStrLn stdout ( "cannot parse db : " ++ y ) >> MaybeT $ return Nothing
-  --processParserOutput (Right x) = hGetContents
- --	 >=> (\y -> return $ analyzeInput y) 
---	 >=> (\z -> return (x,z)) $ stdin
+  processParserOutput :: Either String LanStatistics -> IO ()
+  processParserOutput (Left y) = hPutStrLn stdout ( "cannot parse db : " ++ y ) >> exitFailure
+  processParserOutput (Right dbStat) = do
+	 input <- hGetContents stdin
+ 	 inputStat <- return $ analyzeInput input
+	 decrypt input M.empty dbStat inputStat
 
+  decrypt :: String -> M.Map Symbol Symbol -> LanStatistics -> LanStatistics -> IO ()
+  decrypt cryptext key dbStat inputStat = print $ substituteSymbols key $ getSymbols dbStat $ getSymbols inputStat
+
+{- Decrypt functions -}
+
+--substituteTrigrams :: Key -> LanStatistics -> LanStatistics -> Key
+--substituteTrigrams key ((Symbols pts stp)  _ _) ((Symbols pts stp)  _ _) = M.insert  
+
+substituteSymbols :: Key -> Symbols -> Symbols -> Key
+substituteSymbols key dbstats instats
+  | M.null dbstats && M.null instats = key
+  | True = substituteSymbols (M.insert $ mapHead dbstats $ mapHead instats $ key) (mapTail dbstats) (mapTail instats)
+ where
+  dbsymbols = getSymbols $ dbstats
+  insymbols = getSymbols $ instats
+
+decryptTrigram :: M.Map Symbol Symbol -> LanStatistics -> LanStatistics -> M.Map Symbol Symbol
+decryptTrigram m dbS inputS = undefined
 
 {- Analytic functions -}
 
