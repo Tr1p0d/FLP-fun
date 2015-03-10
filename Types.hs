@@ -38,12 +38,15 @@ orderToSym s (Symbols pts _) = snd . M.elemAt s $ pts
 orderLength :: Symbols -> Int
 orderLength (Symbols pts _) = length . M.keys $ pts 
 
-mapHead :: Symbols -> Symbol
-mapHead = undefined
+mapHead :: M.Map Prob [a] -> a
+mapHead = head . snd . M.findMax  
 
-mapTail :: Symbols -> Symbols
-mapTail = undefined
-
+mapTail :: M.Map Prob [Symbol] -> M.Map Prob [Symbol]
+mapTail = M.updateMaxWithKey emptyListAvareUpdate
+ where 
+  emptyListAvareUpdate k (x:[]) = Nothing
+  emptyListAvareUpdate k (x:xs) = Just xs
+   
 
 
 

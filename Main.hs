@@ -63,23 +63,39 @@ main = getArgs >> withFile "english.db" ReadMode (parseDB >=> processParserOutpu
 	 decrypt input M.empty dbStat inputStat
 
   decrypt :: String -> M.Map Symbol Symbol -> LanStatistics -> LanStatistics -> IO ()
-  decrypt cryptext key dbStat inputStat = print $ substituteSymbols key $ getSymbols dbStat $ getSymbols inputStat
+  decrypt cryptext key 
+    dbStat@(LanStatistics (Symbols dpts dstp) _ _) 
+	inStat@(LanStatistics (Symbols ipts istp) _ _) =
+	print . substituteSymbols dpts ipts . substituteDiagrams dbStat inStat . substituteTrigrams dbStat inStat $ key
 
 {- Decrypt functions -}
 
---substituteTrigrams :: Key -> LanStatistics -> LanStatistics -> Key
---substituteTrigrams key ((Symbols pts stp)  _ _) ((Symbols pts stp)  _ _) = M.insert  
-
-substituteSymbols :: Key -> Symbols -> Symbols -> Key
-substituteSymbols key dbstats instats
-  | M.null dbstats && M.null instats = key
-  | True = substituteSymbols (M.insert $ mapHead dbstats $ mapHead instats $ key) (mapTail dbstats) (mapTail instats)
+substituteTrigrams :: LanStatistics -> LanStatistics -> Key ->  Key
+substituteTrigrams 
+  (LanStatistics (Symbols dbpts dbstp)  _ (Trigrams dbpttr dbtrtp))
+  (LanStatistics (Symbols inpts instp)  _ (Trigrams inpttr intrtp)) key = substituteTr (mapHead dbpttr) (mapHead inpttr) key	
  where
-  dbsymbols = getSymbols $ dbstats
-  insymbols = getSymbols $ instats
+  substituteTr :: Trigram -> Trigram -> Key -> Key
+  substituteTr (x1,x2,x3) (y1,y2,y3) key = M.insert x3 y3 . M.insert x2 y2 . M.insert x1 y1 $ key
 
-decryptTrigram :: M.Map Symbol Symbol -> LanStatistics -> LanStatistics -> M.Map Symbol Symbol
-decryptTrigram m dbS inputS = undefined
+substituteDiagrams :: LanStatistics -> LanStatistics -> Key ->  Key
+substituteDiagrams 
+  (LanStatistics (Symbols dbpts dbstp)  (Diagrams dbpttr dbtrtp) _ )
+  (LanStatistics (Symbols inpts instp)  (Diagrams inpttr intrtp) _ ) key = substituteDia (mapHead dbpttr) (mapHead inpttr) key	
+ where
+  substituteDia :: Diagram -> Diagram -> Key -> Key
+  --substituteDia (x1,x2) (y1,y2) key = M.insertWith (flip const) x2 y2 . M.insert x1 y1 $ key
+  substituteDia (x1,x2) (y1,y2) key = foldr (M.insertWith (flip const)) key selectedDia
+   where
+    selectedDias =  [ | ]
+
+substituteSymbols :: M.Map Prob [Symbol] -> M.Map Prob [Symbol] -> Key -> Key
+substituteSymbols dbpts inpts key 
+  | M.null dbpts && M.null inpts = key
+  | M.null dbpts && (not . M.null $ inpts)  = error $ "input is greater than db" ++ show inpts
+  | (not . M.null $ dbpts) && M.null inpts  = error $ "db is greater than input" ++ show dbpts
+  | True = substituteSymbols (mapTail dbpts) (mapTail inpts) (M.insertWith (flip const) ( mapHead dbpts ) (mapHead inpts ) key)
+
 
 {- Analytic functions -}
 
